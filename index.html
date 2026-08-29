@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'">
+  <title>Trelli — Gestion de projets</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar" hidden>
+    <a class="brand" href="#">
+      <span>Trelli</span>
+      <img class="brand-logo" src="images/logo-montpellier.png" alt="Montpellier Ynov Campus">
+    </a>
+    <div id="session" hidden>
+      <span id="nom-utilisateur"></span>
+      <button id="deconnexion" class="button ghost" type="button">Déconnexion</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="alertes" aria-live="polite"></section>
+
+    <section id="vue-connexion" class="panel narrow">
+      <div class="login-logo-panel">
+        <img class="login-logo" src="images/logo-montpellier.png" alt="Montpellier Ynov Campus">
+      </div>
+      <h1>Connexion</h1>
+      <p class="muted">Accédez à vos projets et à vos tâches.</p>
+      <form id="formulaire-connexion" autocomplete="off">
+        <label>Courriel<input name="courriel" type="email" autocomplete="off" required maxlength="254"></label>
+        <label>Mot de passe<input name="mot_de_passe" type="password" autocomplete="new-password" required minlength="10" maxlength="128"></label>
+        <button class="button primary" type="submit">Se connecter</button>
+      </form>
+      <p class="hint">Compte démo : TrelliKarl@mentor.com </p>
+    </section>
+
+    <section id="vue-application" hidden>
+      <div class="page-heading">
+        <div><h1>Mes projets</h1><p class="muted">Créez un projet ou sélectionnez-en un.</p></div>
+        <button id="nouveau-projet" class="button primary" type="button">Nouveau projet</button>
+      </div>
+      <div class="workspace">
+        <aside class="panel"><div id="liste-projets" class="project-list"></div></aside>
+        <section id="detail-projet" class="panel empty-state"><p>Sélectionnez un projet.</p></section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dialogue-projet">
+    <form id="formulaire-projet">
+      <h2 id="titre-dialogue-projet">Nouveau projet</h2>
+      <input name="id" type="hidden">
+      <label>Titre<input name="titre" required maxlength="150"></label>
+      <label>Description<textarea name="description" maxlength="5000" rows="5"></textarea></label>
+      <label>Statut du projet<select name="statut"><option value="planifie">Planifié</option><option value="en_cours">En cours</option><option value="en_pause">En pause</option><option value="termine">Terminé</option></select></label>
+      <div class="actions"><button id="annuler-projet" class="button ghost" type="button">Annuler</button><button class="button primary" type="submit">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dialogue-tache">
+    <form id="formulaire-tache">
+      <h2 id="titre-dialogue-tache">Nouvelle tâche</h2>
+      <input name="id" type="hidden">
+      <label>Titre<input name="titre" required maxlength="150"></label>
+      <label>Description<textarea name="description" maxlength="5000" rows="4"></textarea></label>
+      <label>Statut<select name="statut"><option value="a_faire">À faire</option><option value="en_cours">En cours</option><option value="terminee">Terminée</option></select></label>
+      <label>Responsable<select name="responsable_id"><option value="">Non assignée</option></select></label>
+      <div class="actions"><button id="annuler-tache" class="button ghost" type="button">Annuler</button><button class="button primary" type="submit">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
