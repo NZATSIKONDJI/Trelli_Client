@@ -380,3 +380,55 @@ async function supprimerTache(id) {
   try { await appelerApi(`/projets/${etat.projetSelectionne.id}/taches/${id}`, { method: "DELETE" }); await chargerProjets(etat.projetSelectionne.id); }
   catch (erreur) { afficherAlerte(erreur.message); }
 }
+
+/*Ici on configure les événements de connexion, déconnexion, création et modification
+des projets et des tâches, ainsi que la fermeture des fenêtres. Au chargement
+de la page, vérifie si une session existe déjà puis affiche l’application ou
+le formulaire de connexion.*/
+
+selectionner("#formulaire-connexion").addEventListener("submit", async evenement => {
+  evenement.preventDefault();
+  try {
+    const utilisateur = await appelerApi("/authentification/connexion", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(evenement.currentTarget))) });
+    definirSession(utilisateur);
+    await chargerProjets();
+  } catch (erreur) { afficherAlerte(erreur.message); }
+});
+selectionner("#deconnexion").addEventListener("click", async () => {
+  try { await appelerApi("/authentification/deconnexion", { method: "POST" }); }
+  finally { etat.projets = []; etat.projetSelectionne = null; definirSession(null); }
+});
+selectionner("#nouveau-projet").addEventListener("click", () => ouvrirProjet());
+selectionner("#annuler-projet").addEventListener("click", () => selectionner("#dialogue-projet").close());
+selectionner("#annuler-tache").addEventListener("click", () => selectionner("#dialogue-tache").close());
+selectionner("#formulaire-projet").addEventListener("submit", async evenement => {
+  evenement.preventDefault();
+  const formulaire = evenement.currentTarget;
+  const id = formulaire.elements.id.value;
+  const donnees = { titre: formulaire.elements.titre.value, description: formulaire.elements.description.value, statut: formulaire.elements.statut.value };
+  try {
+    const projet = await appelerApi(id ? `/projets/${id}` : "/projets", { method: id ? "PUT" : "POST", body: JSON.stringify(donnees) });
+    selectionner("#dialogue-projet").close();
+    await chargerProjets(projet.id);
+  } catch (erreur) { afficherAlerte(erreur.message); }
+});
+selectionner("#formulaire-tache").addEventListener("submit", async evenement => {
+  evenement.preventDefault();
+  const formulaire = evenement.currentTarget;
+  const id = formulaire.elements.id.value;
+  const donnees = {
+    titre: formulaire.elements.titre.value, description: formulaire.elements.description.value,
+    statut: formulaire.elements.statut.value,
+    responsable_id: formulaire.elements.responsable_id.value ? Number(formulaire.elements.responsable_id.value) : null,
+  };
+  try {
+    await appelerApi(`/projets/${etat.projetSelectionne.id}/taches${id ? `/${id}` : ""}`, { method: id ? "PUT" : "POST", body: JSON.stringify(donnees) });
+    selectionner("#dialogue-tache").close();
+    await chargerProjets(etat.projetSelectionne.id);
+  } catch (erreur) { afficherAlerte(erreur.message); }
+});
+
+(async () => {
+  try { const utilisateur = await appelerApi("/authentification/moi"); definirSession(utilisateur); await chargerProjets(); }
+  catch { definirSession(null); }
+})();
