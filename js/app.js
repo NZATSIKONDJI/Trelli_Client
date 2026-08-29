@@ -247,3 +247,81 @@ function afficherEquipe(conteneur, projet) {
     conteneur.append(formulaire);
   }
 }
+
+/*Ici on affiche la zone des tâches avec le bouton de création, construit une colonne
+pour chaque statut et place chaque tâche dans la colonne correspondante.*/
+
+function afficherTaches(conteneur, projet) {
+  const barre = document.createElement("div");
+  barre.className = "toolbar";
+  const titre = document.createElement("h3");
+  titre.textContent = "Tâches";
+  barre.append(titre);
+  barre.append(creerBouton("Nouvelle tâche", "primary", () => ouvrirTache()));
+  conteneur.append(barre);
+  const grille = document.createElement("div");
+  grille.className = "task-grid";
+  for (const statut of Object.keys(libellesStatut)) {
+    const colonne = document.createElement("section");
+    colonne.className = `task-column task-column-${statut}`;
+    const nomColonne = document.createElement("strong");
+    nomColonne.textContent = libellesStatut[statut];
+    colonne.append(nomColonne);
+    for (const tache of projet.taches.filter(element => element.statut === statut)) {
+      colonne.append(creerCarteTache(tache, projet));
+    }
+    grille.append(colonne);
+  }
+  conteneur.append(grille);
+}
+
+/*Ici on crée la carte visuelle d’une tâche avec son titre, sa description et son
+responsable. Si l’utilisateur est administrateur, responsable ou créateur,
+ajoute les commandes permettant de changer le statut, modifier ou supprimer
+la tâche.*/
+
+function creerCarteTache(tache, projet) {
+  const carte = document.createElement("article");
+  carte.className = "task-card";
+  const titre = document.createElement("strong");
+  titre.textContent = tache.titre;
+  const description = document.createElement("p");
+  description.textContent = tache.description || "Sans description";
+  const responsable = document.createElement("div");
+  responsable.className = "task-assignee";
+  if (tache.responsable) {
+    responsable.append(creerAvatar(tache.responsable, "petit"));
+    const nomResponsable = document.createElement("small");
+    nomResponsable.textContent = tache.responsable.nom_affiche;
+    responsable.append(nomResponsable);
+  } else {
+    const nonAssignee = document.createElement("small");
+    nonAssignee.textContent = "Non assignée";
+    responsable.append(nonAssignee);
+  }
+  carte.append(titre, description, responsable);
+  const commandes = document.createElement("div");
+  commandes.className = "actions";
+  const peutAdministrerTache = estAdministrateur()
+    || tache.responsable_id === etat.utilisateur.id
+    || tache.createur_id === etat.utilisateur.id;
+  if (peutAdministrerTache) {
+    const statut = document.createElement("select");
+    statut.setAttribute("aria-label", `Statut de ${tache.titre}`);
+    for (const [valeur, libelle] of Object.entries(libellesStatut)) statut.add(new Option(libelle, valeur));
+    statut.value = tache.statut;
+    statut.addEventListener("change", async () => {
+      try {
+        await appelerApi(`/projets/${projet.id}/taches/${tache.id}/statut`, { method: "PATCH", body: JSON.stringify({ statut: statut.value }) });
+        await chargerProjets(projet.id);
+      } catch (erreur) { afficherAlerte(erreur.message); statut.value = tache.statut; }
+    });
+    commandes.append(
+      statut,
+      creerBouton("Modifier", "ghost", () => ouvrirTache(tache)),
+      creerBouton("Supprimer", "danger", () => supprimerTache(tache.id)),
+    );
+  }
+  if (commandes.childElementCount) carte.append(commandes);
+  return carte;
+}
