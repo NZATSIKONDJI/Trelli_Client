@@ -173,3 +173,77 @@ function afficherDetailProjet() {
   if (etat.onglet === "equipe") afficherEquipe(detail, projet);
   else afficherTaches(detail, projet);
 }
+
+/*Ici on affiche les membres du projet avec leur identité, leur avatar et leur rôle.
+Le propriétaire peut modifier les rôles sauf le sien, tandis que les
+administrateurs peuvent ajouter de nouveaux participants au projet.*/
+
+function afficherEquipe(conteneur, projet) {
+  const estProprietaire = projet.proprietaire_id === etat.utilisateur.id;
+  const explication = document.createElement("p");
+  explication.className = "muted";
+  explication.textContent = estProprietaire
+    ? "Vous êtes le propriétaire : vous seul pouvez attribuer ou retirer le rôle administrateur."
+    : estAdministrateur()
+      ? "Vous êtes administrateur délégué : vous gérez le projet et les tâches, mais seul le propriétaire peut modifier les rôles."
+    : "Vous pouvez consulter l’équipe et les rôles. Seul le propriétaire peut modifier les rôles.";
+  conteneur.append(explication);
+  const liste = document.createElement("div");
+  liste.className = "role-list";
+  for (const personne of projet.participants) {
+    const ligne = document.createElement("div");
+    ligne.className = "role-row";
+    const identite = document.createElement("div");
+    identite.className = "member-identity";
+    const textes = document.createElement("span");
+    const nom = document.createElement("strong");
+    nom.textContent = personne.nom_affiche;
+    const courrielMembre = document.createElement("small");
+    courrielMembre.textContent = personne.courriel;
+    textes.append(nom, courrielMembre);
+    identite.append(creerAvatar(personne), textes);
+    const role = document.createElement("select");
+    role.append(new Option("Administrateur", "administrateur"), new Option("Participant", "participant"));
+    role.value = personne.role;
+    role.disabled = !estProprietaire || personne.id === projet.proprietaire_id;
+    role.setAttribute("aria-label", `Rôle de ${personne.nom_affiche}`);
+    role.addEventListener("change", async () => {
+      try {
+        await appelerApi(`/projets/${projet.id}/participants/${personne.id}/role`, {
+          method: "PUT", body: JSON.stringify({ role: role.value }),
+        });
+        await chargerProjets(projet.id);
+        etat.onglet = "equipe";
+        afficherDetailProjet();
+      } catch (erreur) {
+        afficherAlerte(erreur.message);
+        role.value = personne.role;
+      }
+    });
+    ligne.append(identite, role);
+    liste.append(ligne);
+  }
+  conteneur.append(liste);
+  if (estAdministrateur()) {
+    const formulaire = document.createElement("form");
+    formulaire.className = "add-participant";
+    const courriel = document.createElement("input");
+    courriel.type = "email";
+    courriel.placeholder = "participant@mentor-ac.fr";
+    courriel.required = true;
+    courriel.maxLength = 254;
+    const ajouter = creerBouton("Ajouter", "ghost", () => {});
+    ajouter.type = "submit";
+    formulaire.append(courriel, ajouter);
+    formulaire.addEventListener("submit", async evenement => {
+      evenement.preventDefault();
+      try {
+        await appelerApi(`/projets/${projet.id}/participants`, { method: "POST", body: JSON.stringify({ courriel: courriel.value }) });
+        await chargerProjets(projet.id);
+        etat.onglet = "equipe";
+        afficherDetailProjet();
+      } catch (erreur) { afficherAlerte(erreur.message); }
+    });
+    conteneur.append(formulaire);
+  }
+}
