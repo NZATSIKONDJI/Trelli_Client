@@ -90,3 +90,33 @@ function afficherProjets() {
     liste.append(boutonProjet);
   }
 }
+
+
+/*Ici on crée et renvoie un bouton avec un texte, une classe CSS et une action 
+à exécuter lors du clic, afin d’éviter de répéter le même code.*/
+
+function creerBouton(libelle, classe, action) {
+  const bouton = document.createElement("button");
+  bouton.type = "button";
+  bouton.className = `button ${classe}`;
+  bouton.textContent = libelle;
+  bouton.addEventListener("click", action);
+  return bouton;
+}
+
+/*Ici on crée l’avatar d’un membre à partir de sa photo. Si la photo est absente ou
+ne se charge pas, affiche automatiquement les initiales de son nom.*/
+
+function creerAvatar(personne, taille = "normal") {
+  const avatar = document.createElement("span");
+  avatar.className = `avatar avatar-${taille}`;
+  avatar.textContent = personne.nom_affiche.split(/\s+/).slice(0, 2).map(mot => mot[0]).join("").toUpperCase();
+  avatar.title = personne.nom_affiche;
+  if (personne.photo) {
+    const image = document.createElement("img");
+    image.src = personne.photo;
+    image.alt = `Photo de ${personne.nom_affiche}`;
+    image.addEventListener("load", () => avatar.replaceChildren(image));
+  }
+  return avatar;
+}
