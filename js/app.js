@@ -43,3 +43,50 @@ function definirSession(utilisateur) {
     }, 100);
   }
 }
+
+/*Ici on charge depuis l’API les projets accessibles à l’utilisateur, sélectionne le
+projet demandé ou le premier disponible, puis actualise leur liste et les
+informations détaillées du projet sélectionné.*/
+
+async function chargerProjets(idSouhaite) {
+  etat.projets = await appelerApi("/projets");
+  etat.projetSelectionne = etat.projets.find(projet => projet.id === idSouhaite) ?? etat.projets[0] ?? null;
+  afficherProjets();
+  afficherDetailProjet();
+}
+
+/*Ici on affiche la liste des projets avec leur titre, leur statut, le nombre de tâches
+et le rôle de l’utilisateur. Lorsqu’un projet est sélectionné, actualise la
+liste et affiche ses tâches et ses informations détaillées.*/
+
+function afficherProjets() {
+  const liste = selectionner("#liste-projets");
+  liste.replaceChildren();
+  if (!etat.projets.length) {
+    const vide = document.createElement("p");
+    vide.className = "muted";
+    vide.textContent = "Aucun projet.";
+    liste.append(vide);
+    return;
+  }
+  for (const projet of etat.projets) {
+    const boutonProjet = document.createElement("button");
+    boutonProjet.type = "button";
+    boutonProjet.className = `project-item statut-projet-${projet.statut}${projet.id === etat.projetSelectionne?.id ? " active" : ""}`;
+    const titre = document.createElement("strong");
+    titre.textContent = projet.titre;
+    const resume = document.createElement("span");
+    resume.textContent = `${projet.taches.length} tâche(s) · ${projet.role_courant}`;
+    const statut = document.createElement("span");
+    statut.className = `project-status project-status-${projet.statut}`;
+    statut.textContent = libellesStatutProjet[projet.statut];
+    boutonProjet.append(titre, statut, resume);
+    boutonProjet.addEventListener("click", () => {
+      etat.projetSelectionne = projet;
+      etat.onglet = "taches";
+      afficherProjets();
+      afficherDetailProjet();
+    });
+    liste.append(boutonProjet);
+  }
+}
