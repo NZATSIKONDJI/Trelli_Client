@@ -325,3 +325,58 @@ function creerCarteTache(tache, projet) {
   if (commandes.childElementCount) carte.append(commandes);
   return carte;
 }
+
+/*Ici on ouvre la fenêtre de création ou de modification d’un projet, réinitialise le
+formulaire et le préremplit avec les informations du projet lorsqu’il existe.*/
+
+function ouvrirProjet(projet = null) {
+  const formulaire = selectionner("#formulaire-projet");
+  formulaire.reset();
+  formulaire.elements.id.value = projet?.id ?? "";
+  formulaire.elements.titre.value = projet?.titre ?? "";
+  formulaire.elements.description.value = projet?.description ?? "";
+  formulaire.elements.statut.value = projet?.statut ?? "en_cours";
+  selectionner("#titre-dialogue-projet").textContent = projet ? "Modifier le projet" : "Nouveau projet";
+  selectionner("#dialogue-projet").showModal();
+}
+
+/*Ici on ouvre la fenêtre de création ou de modification d’une tâche, initialise ses
+champs, remplit la liste des responsables avec les participants du projet
+et sélectionne le responsable actuel lorsque la tâche existe déjà.*/
+
+function ouvrirTache(tache = null) {
+  const formulaire = selectionner("#formulaire-tache");
+  formulaire.reset();
+  formulaire.elements.id.value = tache?.id ?? "";
+  formulaire.elements.titre.value = tache?.titre ?? "";
+  formulaire.elements.description.value = tache?.description ?? "";
+  formulaire.elements.statut.value = tache?.statut ?? "a_faire";
+  const responsables = formulaire.elements.responsable_id;
+  responsables.replaceChildren(new Option("Non assignée", ""));
+  for (const personne of etat.projetSelectionne.participants) responsables.add(new Option(`${personne.nom_affiche} (${personne.courriel})`, String(personne.id)));
+  responsables.value = tache?.responsable_id ? String(tache.responsable_id) : "";
+  selectionner("#titre-dialogue-tache").textContent = tache ? "Modifier la tâche" : "Nouvelle tâche";
+  selectionner("#dialogue-tache").showModal();
+}
+
+
+/*Ici on demande une confirmation avant de supprimer définitivement le projet
+sélectionné et ses tâches, puis actualise la liste des projets. En cas
+d’échec, affiche le message d’erreur renvoyé par l’API.*/
+
+async function supprimerProjet() {
+  if (!confirm("Supprimer définitivement ce projet et ses tâches ?")) return;
+  try { await appelerApi(`/projets/${etat.projetSelectionne.id}`, { method: "DELETE" }); await chargerProjets(); }
+  catch (erreur) { afficherAlerte(erreur.message); }
+}
+
+
+/*Ici on demande une confirmation avant de supprimer définitivement la tâche
+sélectionnée, puis actualise la liste des projets. En cas
+d’échec, affiche le message d’erreur renvoyé par l’API.*/
+
+async function supprimerTache(id) {
+  if (!confirm("Supprimer cette tâche ?")) return;
+  try { await appelerApi(`/projets/${etat.projetSelectionne.id}/taches/${id}`, { method: "DELETE" }); await chargerProjets(etat.projetSelectionne.id); }
+  catch (erreur) { afficherAlerte(erreur.message); }
+}
