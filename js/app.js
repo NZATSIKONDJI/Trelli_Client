@@ -120,3 +120,56 @@ function creerAvatar(personne, taille = "normal") {
   }
   return avatar;
 }
+
+/*Ici on affiche les informations et les actions du projet sélectionné selon les droits
+de l’utilisateur, construit les onglets autorisés, puis affiche soit les tâches,
+soit la gestion de l’équipe. Si aucun projet n’existe, affiche un message vide.*/
+
+function afficherDetailProjet() {
+  const detail = selectionner("#detail-projet");
+  detail.replaceChildren();
+  const projet = etat.projetSelectionne;
+  if (!projet) {
+    detail.className = "panel empty-state";
+    const texte = document.createElement("p");
+    texte.textContent = "Créez votre premier projet.";
+    detail.append(texte);
+    return;
+  }
+  detail.className = "panel";
+  const entete = document.createElement("div");
+  entete.className = "detail-heading";
+  const informations = document.createElement("div");
+  const titre = document.createElement("h2");
+  titre.textContent = projet.titre;
+  const statutProjet = document.createElement("span");
+  statutProjet.className = `project-status project-status-${projet.statut}`;
+  statutProjet.textContent = libellesStatutProjet[projet.statut];
+  const description = document.createElement("p");
+  description.className = "muted";
+  description.textContent = projet.description || "Sans description";
+  informations.append(titre, statutProjet, description);
+  const commandes = document.createElement("div");
+  commandes.className = "actions";
+  if (estAdministrateur()) commandes.append(creerBouton("Modifier", "ghost", () => ouvrirProjet(projet)));
+  if (projet.proprietaire_id === etat.utilisateur.id) commandes.append(creerBouton("Supprimer", "danger", supprimerProjet));
+  entete.append(informations, commandes);
+  detail.append(entete);
+
+  const onglets = document.createElement("div");
+  onglets.className = "tabs";
+  const ongletsDisponibles = estAdministrateur()
+    ? [["taches", "Tâches"], ["equipe", "Équipe et rôles"]]
+    : [["taches", "Tâches"]];
+  if (!estAdministrateur() && etat.onglet === "equipe") etat.onglet = "taches";
+  for (const [valeur, libelle] of ongletsDisponibles) {
+    const boutonOnglet = creerBouton(libelle, etat.onglet === valeur ? "primary" : "ghost", () => {
+      etat.onglet = valeur;
+      afficherDetailProjet();
+    });
+    onglets.append(boutonOnglet);
+  }
+  detail.append(onglets);
+  if (etat.onglet === "equipe") afficherEquipe(detail, projet);
+  else afficherTaches(detail, projet);
+}
